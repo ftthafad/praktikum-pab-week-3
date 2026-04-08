@@ -125,8 +125,15 @@ fun TourismProfileScreen() {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = {
-                        val gmmIntentUri = Uri.parse("geo:0,0?q=Candi+Borobudur")
-                        context.startActivity(Intent(Intent.ACTION_VIEW, gmmIntentUri))
+                        // Pakai Place ID supaya langsung buka halaman detail tempat tersebut
+                        // Place ID Candi Borobudur: ChIJl9anCfCMei4Ry8NNdDRD0w0
+                        val placeId = "ChIJl9anCfCMei4Ry8NNdDRD0w0"
+                        val gmmIntentUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=Candi+Borobudur&query_place_id=$placeId")
+
+                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                        mapIntent.setPackage("com.google.android.apps.maps")
+
+                        context.startActivity(mapIntent)
                     },
                     modifier = Modifier.fillMaxWidth().height(55.dp),
                     shape = RoundedCornerShape(16.dp),
