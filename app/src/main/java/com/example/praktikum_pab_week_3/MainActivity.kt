@@ -41,14 +41,12 @@ fun TourismProfileScreen() {
     val context = LocalContext.current
     val scrollState = rememberScrollState() // Untuk fitur Scrolling
 
-    // Data
     val namaWisata = "Candi Borobudur"
     val hargaTiket = "Rp 50.000"
     val deskripsi = "Candi Buddha terbesar di dunia yang terletak di Magelang, Jawa Tengah. " +
             "Ditetapkan sebagai Situs Warisan Dunia UNESCO, tempat ini menawarkan " +
             "pemandangan matahari terbit yang menakjubkan dan arsitektur kuno yang megah."
 
-    // Background Gradasi Biru ke Putih
     val gradientBackground = Brush.verticalGradient(
         colors = listOf(Color(0xFFB3E5FC), Color.White)
     )
@@ -71,7 +69,7 @@ fun TourismProfileScreen() {
                 fontWeight = FontWeight.Bold
             )
 
-            // 1. Gambar dengan Sudut Tumpul (Rounded)
+            // 1. Gambar wisata
             Image(
                 painter = painterResource(id = R.drawable.borobudur),
                 contentDescription = "Foto Borobudur",
@@ -82,7 +80,7 @@ fun TourismProfileScreen() {
                 contentScale = ContentScale.Crop
             )
 
-            // 2. Card View Modern (Flexible Size)
+            // 2. Card View
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -121,12 +119,10 @@ fun TourismProfileScreen() {
                 }
             }
 
-            // 3. Tombol-Tombol Modern
+            // 3. Tombol-tombol
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = {
-                        // Pakai Place ID supaya langsung buka halaman detail tempat tersebut
-                        // Place ID Candi Borobudur: ChIJl9anCfCMei4Ry8NNdDRD0w0
                         val placeId = "ChIJl9anCfCMei4Ry8NNdDRD0w0"
                         val gmmIntentUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=Candi+Borobudur&query_place_id=$placeId")
 
@@ -160,10 +156,16 @@ fun TourismProfileScreen() {
 
                 Button(
                     onClick = {
+                        val deskripsiLengkap = "Candi Borobudur adalah candi Buddha terbesar di dunia yang terletak di Magelang, Jawa Tengah." +
+                                "Candi ini dibangun sekitar abad ke-8 hingga ke-9 pada masa Dinasti Syailendra. " +
+                                "Bentuknya unik banget karena menyerupai mandala raksasa dengan sembilan tingkat yang menggambarkan perjalanan menuju pencerahan. " +
+                                "Dindingnya dipenuhi ribuan relief yang menceritakan ajaran Buddha dan kehidupan masa lampau. " +
+                                "Setelah sempat terlupakan selama berabad-abad, Borobudur akhirnya ditemukan kembali pada abad ke-19 " +
+                                "dan kini menjadi salah satu situs Warisan Dunia UNESCO yang paling terkenal di Indonesia."
                         val intent = Intent(context, DetailActivity::class.java).apply {
                             putExtra("NAMA_WISATA", namaWisata)
                             putExtra("HARGA_TIKET", hargaTiket)
-                            putExtra("DESKRIPSI", deskripsi)
+                            putExtra("DESKRIPSI", deskripsiLengkap)
                         }
                         context.startActivity(intent)
                     },
