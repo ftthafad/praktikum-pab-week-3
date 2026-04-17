@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.praktikum_pab_week_3"
+    namespace = "com.travelwaka.app"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -12,8 +12,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.praktikum_pab_week_3"
-        minSdk = 24
+        applicationId = "com.travelwaka.app"
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -55,4 +55,29 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
+    implementation("androidx.activity:activity-compose:1.9.0")
+
+    // Compose BOM
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Pager (untuk carousel/onboarding)
+    implementation("androidx.compose.foundation:foundation")
+
+    // Image loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Debug
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

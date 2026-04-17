@@ -22,5 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "praktikum-pab-week-3"
+rootProject.name = "TravelWaka"
 include(":app")
+ 

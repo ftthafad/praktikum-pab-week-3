@@ -1,4 +1,4 @@
-package com.example.praktikum_pab_week_3
+package com.travelwaka.app
 
 import org.junit.Test
 
