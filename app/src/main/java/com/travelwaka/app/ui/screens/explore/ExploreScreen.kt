@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
+import com.travelwaka.app.viewmodel.WisataViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,15 +28,35 @@ fun ExploreScreen(
     onWisataClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Semua") }
+    val viewModel = remember { WisataViewModel() }
+    val wisataList by viewModel.wisataList.collectAsState()
+    val categories by viewModel.categories.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    val filteredList = dummyWisataList.filter { wisata ->
-        val matchesQuery = searchQuery.isEmpty() ||
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<Int?>(null) }
+    var selectedCategoryName by remember { mutableStateOf("Semua") }
+
+    // Load data saat pertama kali
+    LaunchedEffect(Unit) {
+        viewModel.getWisata()
+        viewModel.getCategories()
+    }
+
+    // Filter wisata by kategori
+    LaunchedEffect(selectedCategory) {
+        if (selectedCategory == null) {
+            viewModel.getWisata()
+        } else {
+            viewModel.getWisataByCategory(selectedCategory!!)
+        }
+    }
+
+    // Filter by search query
+    val filteredList = wisataList.filter { wisata ->
+        searchQuery.isEmpty() ||
                 wisata.name.contains(searchQuery, ignoreCase = true) ||
                 wisata.location.contains(searchQuery, ignoreCase = true)
-        val matchesCategory = selectedCategory == "Semua" || wisata.category == selectedCategory
-        matchesQuery && matchesCategory
     }
 
     Scaffold(
@@ -91,15 +112,18 @@ fun ExploreScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(dummyCategories) { category ->
+                item {
                     FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
+                        selected = selectedCategory == null,
+                        onClick = {
+                            selectedCategory = null
+                            selectedCategoryName = "Semua"
+                        },
                         label = {
                             Text(
-                                category,
+                                "Semua",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (selectedCategory == category) White else Primary
+                                color = if (selectedCategory == null) White else Primary
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
@@ -108,7 +132,33 @@ fun ExploreScreen(
                         ),
                         border = FilterChipDefaults.filterChipBorder(
                             enabled = true,
-                            selected = selectedCategory == category,
+                            selected = selectedCategory == null,
+                            borderColor = Primary,
+                            selectedBorderColor = Primary
+                        )
+                    )
+                }
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category.id,
+                        onClick = {
+                            selectedCategory = category.id
+                            selectedCategoryName = category.name
+                        },
+                        label = {
+                            Text(
+                                category.name,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selectedCategory == category.id) White else Primary
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Primary,
+                            containerColor = Background
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = selectedCategory == category.id,
                             borderColor = Primary,
                             selectedBorderColor = Primary
                         )
@@ -116,41 +166,51 @@ fun ExploreScreen(
                 }
             }
 
-            // Result count
-            Text(
-                text = "${filteredList.size} destinasi ditemukan",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-            )
-
-            // List hasil
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredList) { wisata ->
-                    WisataListCard(
-                        wisata = wisata,
-                        onClick = { onWisataClick(wisata.id) }
-                    )
+            // Loading state
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Primary)
                 }
-                if (filteredList.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 64.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("😕", style = MaterialTheme.typography.displayMedium)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    "Wisata tidak ditemukan",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = TextSecondary
-                                )
+            } else {
+                // Result count
+                Text(
+                    text = "${filteredList.size} destinasi ditemukan",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+
+                // List hasil
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredList) { wisata ->
+                        WisataListCard(
+                            wisata = wisata,
+                            onClick = { onWisataClick(wisata.id.toString()) }
+                        )
+                    }
+                    if (filteredList.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 64.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("😕", style = MaterialTheme.typography.displayMedium)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Wisata tidak ditemukan",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = TextSecondary
+                                    )
+                                }
                             }
                         }
                     }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
+import com.travelwaka.app.viewmodel.WisataViewModel
 
 data class ReviewItem(
     val userName: String,
@@ -39,12 +41,6 @@ val dummyReviews = listOf(
     ReviewItem("Ahmad Fauzi", 5, "Wajib dikunjungi kalau ke Jawa Tengah!", "28 Mar 2025")
 )
 
-val detailImages = listOf(
-    "https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800",
-    "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800",
-    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800"
-)
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DetailWisataScreen(
@@ -53,165 +49,222 @@ fun DetailWisataScreen(
     onBack: () -> Unit,
     onWriteReview: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { detailImages.size })
+    val viewModel = remember { WisataViewModel() }
+    val wisata by viewModel.wisataDetail.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     var isBookmarked by remember { mutableStateOf(false) }
-    val wisata = dummyWisataList.find { it.id == wisataId } ?: dummyWisataList[0]
+
+    // Load detail wisata
+    LaunchedEffect(wisataId) {
+        viewModel.getWisataDetail(wisataId.toIntOrNull() ?: 0)
+    }
+
+    val photos = wisata?.photos ?: emptyList()
+    val pagerState = rememberPagerState(pageCount = { if (photos.isEmpty()) 1 else photos.size })
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            // Foto Carousel
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                        AsyncImage(
-                            model = detailImages[page],
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    // Back button
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                    ) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = White)
-                    }
-                    // Page indicators
-                    Row(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        repeat(detailImages.size) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .size(if (pagerState.currentPage == index) 20.dp else 8.dp, 8.dp)
-                                    .clip(CircleShape)
-                                    .background(if (pagerState.currentPage == index) White else White.copy(alpha = 0.5f))
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Primary)
+            }
+        } else if (wisata == null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Wisata tidak ditemukan", color = TextSecondary)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                // Foto Carousel
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                            AsyncImage(
+                                model = if (photos.isEmpty()) "" else photos[page].photo_url,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
-                    }
-                }
-            }
-
-            // Info Wisata
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-20).dp),
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                    colors = CardDefaults.cardColors(containerColor = White)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                        // Back button
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = wisata.name,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = Primary, modifier = Modifier.size(16.dp))
-                                    Text(wisata.location, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                                }
-                            }
-                            Row {
-                                IconButton(onClick = { isBookmarked = !isBookmarked }) {
-                                    Icon(
-                                        imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                                        contentDescription = "Bookmark",
-                                        tint = if (isBookmarked) Primary else TextSecondary
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = White)
+                        }
+                        // Page indicators
+                        if (photos.size > 1) {
+                            Row(
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                repeat(photos.size) { index ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (pagerState.currentPage == index) 20.dp else 8.dp, 8.dp)
+                                            .clip(CircleShape)
+                                            .background(if (pagerState.currentPage == index) White else White.copy(alpha = 0.5f))
                                     )
                                 }
-                                IconButton(onClick = {}) {
-                                    Icon(Icons.Filled.Share, contentDescription = "Share", tint = TextSecondary)
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            InfoChip(icon = Icons.Filled.Star, text = wisata.rating.toString(), color = StarColor)
-                            InfoChip(icon = Icons.Filled.ConfirmationNumber, text = wisata.price, color = Primary)
-                            InfoChip(icon = Icons.Filled.Category, text = wisata.category, color = PrimaryMedium)
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Divider(color = DividerColor)
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text("Jam Operasional", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.AccessTime, contentDescription = null, tint = Primary, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Senin - Minggu: 08.00 - 17.00 WIB", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Tentang Tempat Ini", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Destinasi wisata yang menakjubkan di Jawa Tengah dengan pemandangan alam yang indah dan fasilitas yang lengkap. Cocok untuk dikunjungi bersama keluarga maupun teman-teman. Tersedia area parkir luas, toilet umum, warung makan, dan spot foto instagramable.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Divider(color = DividerColor)
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text("Lokasi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Map placeholder
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(150.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PrimaryLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Filled.Map, contentDescription = null, tint = Primary, modifier = Modifier.size(40.dp))
-                                Text("Peta Lokasi", style = MaterialTheme.typography.bodyMedium, color = Primary)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Divider(color = DividerColor)
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Ulasan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                            TextButton(onClick = onWriteReview) {
-                                Text("Tulis Ulasan", color = Primary)
                             }
                         }
                     }
                 }
-            }
 
-            // Reviews
-            items(dummyReviews.size) { index ->
-                val review = dummyReviews[index]
-                ReviewCard(review = review, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+                // Info Wisata
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-20).dp),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        colors = CardDefaults.cardColors(containerColor = White)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = wisata!!.name,
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = Primary, modifier = Modifier.size(16.dp))
+                                        Text(wisata!!.location, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                                    }
+                                }
+                                Row {
+                                    IconButton(onClick = { isBookmarked = !isBookmarked }) {
+                                        Icon(
+                                            imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                            contentDescription = "Bookmark",
+                                            tint = if (isBookmarked) Primary else TextSecondary
+                                        )
+                                    }
+                                    IconButton(onClick = {}) {
+                                        Icon(Icons.Filled.Share, contentDescription = "Share", tint = TextSecondary)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                InfoChip(icon = Icons.Filled.Star, text = wisata!!.rating.toString(), color = StarColor)
+                                InfoChip(icon = Icons.Filled.ConfirmationNumber, text = wisata!!.price, color = Primary)
+                                InfoChip(icon = Icons.Filled.Category, text = wisata!!.category?.name ?: "-", color = PrimaryMedium)
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = DividerColor)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text("Jam Operasional", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.AccessTime, contentDescription = null, tint = Primary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(wisata!!.opening_hours ?: "-", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Tentang Tempat Ini", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = wisata!!.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = DividerColor)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text("Lokasi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (wisata!!.latitude != null && wisata!!.longitude != null) {
+                                OsmMapView(
+                                    latitude = wisata!!.latitude!!,
+                                    longitude = wisata!!.longitude!!,
+                                    title = wisata!!.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Tombol Get Direction
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                OutlinedButton(
+                                    onClick = {
+                                        val uri = android.net.Uri.parse(
+                                            "google.navigation:q=${wisata!!.latitude},${wisata!!.longitude}&mode=d"
+                                        )
+                                        val intent = android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW, uri
+                                        )
+                                        intent.setPackage("com.google.android.apps.maps")
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
+                                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Primary)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Directions,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Get Direction",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Divider(color = DividerColor)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Ulasan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                                TextButton(onClick = onWriteReview) {
+                                    Text("Tulis Ulasan", color = Primary)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Reviews (dummy dulu)
+                items(dummyReviews) { review ->
+                    ReviewCard(review = review, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+                }
             }
         }
     }

@@ -21,7 +21,8 @@ fun BookmarkScreen(
     navController: NavController,
     onWisataClick: (String) -> Unit
 ) {
-    val bookmarkedList = dummyWisataList.filter { it.isBookmarked }
+    // Sementara kosong, akan disambungkan ke API setelah tabel bookmarks dibuat
+    val bookmarkedList = emptyList<Any>()
 
     Scaffold(
         topBar = {
@@ -42,53 +43,27 @@ fun BookmarkScreen(
         bottomBar = { BottomNavBar(navController) },
         containerColor = Background
     ) { paddingValues ->
-        if (bookmarkedList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🔖", style = MaterialTheme.typography.displayLarge)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Belum ada wisata tersimpan",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Simpan wisata favoritmu agar mudah ditemukan",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        text = "${bookmarkedList.size} wisata tersimpan",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-                items(bookmarkedList) { wisata ->
-                    WisataListCard(
-                        wisata = wisata,
-                        onClick = { onWisataClick(wisata.id) },
-                        onBookmarkClick = {}
-                    )
-                }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("🔖", style = MaterialTheme.typography.displayLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Belum ada wisata tersimpan",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Simpan wisata favoritmu agar mudah ditemukan",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
             }
         }
     }

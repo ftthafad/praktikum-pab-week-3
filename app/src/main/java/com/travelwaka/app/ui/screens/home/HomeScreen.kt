@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.travelwaka.app.network.model.Wisata
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
+import com.travelwaka.app.viewmodel.WisataViewModel
 
 val bannerImages = listOf(
     "https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800",
@@ -42,7 +44,29 @@ fun HomeScreen(
     onWisataClick: (String) -> Unit,
     onSearchClick: () -> Unit
 ) {
+    val viewModel = remember { WisataViewModel() }
+    val wisataList by viewModel.wisataList.collectAsState()
+    val categories by viewModel.categories.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    var selectedCategory by remember { mutableStateOf<Int?>(null) }
+
     val pagerState = rememberPagerState(pageCount = { bannerImages.size })
+
+    // Load data saat pertama kali
+    LaunchedEffect(Unit) {
+        viewModel.getWisata()
+        viewModel.getCategories()
+    }
+
+    // Load wisata by kategori saat kategori dipilih
+    LaunchedEffect(selectedCategory) {
+        if (selectedCategory == null) {
+            viewModel.getWisata()
+        } else {
+            viewModel.getWisataByCategory(selectedCategory!!)
+        }
+    }
 
     Scaffold(
         bottomBar = { BottomNavBar(navController) },
@@ -129,7 +153,6 @@ fun HomeScreen(
                             )
                         }
                     }
-                    // Indicators
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -153,27 +176,32 @@ fun HomeScreen(
             // Kategori
             item {
                 Column(modifier = Modifier.padding(top = 20.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Kategori",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    }
+                    Text(
+                        text = "Kategori",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(dummyCategories.drop(1)) { category ->
-                            CategoryChip(label = category)
+                        // Chip "Semua"
+                        item {
+                            CategoryChip(
+                                label = "Semua",
+                                isSelected = selectedCategory == null,
+                                onClick = { selectedCategory = null }
+                            )
+                        }
+                        items(categories) { category ->
+                            CategoryChip(
+                                label = category.name,
+                                isSelected = selectedCategory == category.id,
+                                onClick = { selectedCategory = category.id }
+                            )
                         }
                     }
                 }
@@ -201,61 +229,73 @@ fun HomeScreen(
                 }
             }
 
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(dummyWisataList.take(5)) { wisata ->
-                        WisataCard(
-                            wisata = wisata,
-                            onClick = { onWisataClick(wisata.id) }
-                        )
+            // Loading state
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary)
                     }
                 }
-            }
+            } else {
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(wisataList.take(5)) { wisata ->
+                            WisataCard(
+                                wisata = wisata,
+                                onClick = { onWisataClick(wisata.id.toString()) }
+                            )
+                        }
+                    }
+                }
 
-            // Wisata Terdekat
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(top = 24.dp, bottom = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                // Semua Wisata
+                item {
                     Text(
                         text = "Semua Wisata",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = TextPrimary,
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 24.dp, bottom = 12.dp)
                     )
                 }
-            }
 
-            items(dummyWisataList) { wisata ->
-                WisataListCard(
-                    wisata = wisata,
-                    onClick = { onWisataClick(wisata.id) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                )
+                items(wisataList) { wisata ->
+                    WisataListCard(
+                        wisata = wisata,
+                        onClick = { onWisataClick(wisata.id.toString()) },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun CategoryChip(label: String) {
+fun CategoryChip(
+    label: String,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {}
+) {
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = Primary,
-        modifier = Modifier
+        color = if (isSelected) Primary else PrimaryLight,
+        onClick = onClick
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = White,
+            color = if (isSelected) White else Primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
     }

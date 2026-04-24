@@ -18,8 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.travelwaka.app.network.model.Wisata
 import com.travelwaka.app.ui.theme.*
 
+// ✅ Tetap ada untuk backward compatibility (dummy data)
 data class WisataItem(
     val id: String,
     val name: String,
@@ -31,13 +33,18 @@ data class WisataItem(
     val isBookmarked: Boolean = false
 )
 
+// ✅ WisataCard pakai model Wisata dari API
 @Composable
 fun WisataCard(
-    wisata: WisataItem,
+    wisata: Wisata,
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val imageUrl = wisata.cover_photo?.photo_url
+        ?: wisata.photos?.firstOrNull()?.photo_url
+        ?: ""
+
     Card(
         modifier = modifier
             .width(200.dp)
@@ -49,7 +56,7 @@ fun WisataCard(
         Column {
             Box {
                 AsyncImage(
-                    model = wisata.imageUrl,
+                    model = imageUrl,
                     contentDescription = wisata.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -62,9 +69,9 @@ fun WisataCard(
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
-                        imageVector = if (wisata.isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                        imageVector = Icons.Filled.BookmarkBorder,
                         contentDescription = "Bookmark",
-                        tint = if (wisata.isBookmarked) Primary else White
+                        tint = White
                     )
                 }
                 Surface(
@@ -75,7 +82,7 @@ fun WisataCard(
                     color = Primary.copy(alpha = 0.85f)
                 ) {
                     Text(
-                        text = wisata.category,
+                        text = wisata.category?.name ?: "-",
                         style = MaterialTheme.typography.labelSmall,
                         color = White,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -141,13 +148,18 @@ fun WisataCard(
     }
 }
 
+// ✅ WisataListCard pakai model Wisata dari API
 @Composable
 fun WisataListCard(
-    wisata: WisataItem,
+    wisata: Wisata,
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val imageUrl = wisata.cover_photo?.photo_url
+        ?: wisata.photos?.firstOrNull()?.photo_url
+        ?: ""
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -158,7 +170,7 @@ fun WisataListCard(
     ) {
         Row(modifier = Modifier.height(100.dp)) {
             AsyncImage(
-                model = wisata.imageUrl,
+                model = imageUrl,
                 contentDescription = wisata.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -222,9 +234,9 @@ fun WisataListCard(
             }
             IconButton(onClick = onBookmarkClick) {
                 Icon(
-                    imageVector = if (wisata.isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                    imageVector = Icons.Filled.BookmarkBorder,
                     contentDescription = "Bookmark",
-                    tint = if (wisata.isBookmarked) Primary else TextSecondary
+                    tint = TextSecondary
                 )
             }
         }
