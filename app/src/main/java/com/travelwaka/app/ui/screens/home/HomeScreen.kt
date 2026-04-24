@@ -1,0 +1,274 @@
+package com.travelwaka.app.ui.screens.home
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import com.travelwaka.app.ui.components.*
+import com.travelwaka.app.ui.theme.*
+
+val bannerImages = listOf(
+    "https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=800",
+    "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800",
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800"
+)
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HomeScreen(
+    navController: NavController,
+    onWisataClick: (String) -> Unit,
+    onSearchClick: () -> Unit
+) {
+    val pagerState = rememberPagerState(pageCount = { bannerImages.size })
+
+    Scaffold(
+        bottomBar = { BottomNavBar(navController) },
+        containerColor = Background
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            // Top Bar
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Primary)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Travel Waka",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Jelajahi Jawa Tengah",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PrimaryLight
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search", tint = White)
+                        }
+                        IconButton(onClick = {}) {
+                            Icon(Icons.Filled.Notifications, contentDescription = "Notifikasi", tint = White)
+                        }
+                    }
+                }
+            }
+
+            // Banner Carousel
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        Box {
+                            AsyncImage(
+                                model = bannerImages[page],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                androidx.compose.ui.graphics.Color.Transparent,
+                                                Primary.copy(alpha = 0.6f)
+                                            )
+                                        )
+                                    )
+                            )
+                            Text(
+                                text = "Destinasi Wisata Unggulan",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(16.dp)
+                            )
+                        }
+                    }
+                    // Indicators
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        repeat(bannerImages.size) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(if (pagerState.currentPage == index) 20.dp else 8.dp, 8.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (pagerState.currentPage == index) White else White.copy(alpha = 0.5f)
+                                    )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Kategori
+            item {
+                Column(modifier = Modifier.padding(top = 20.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Kategori",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(dummyCategories.drop(1)) { category ->
+                            CategoryChip(label = category)
+                        }
+                    }
+                }
+            }
+
+            // Wisata Populer
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 24.dp, bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Wisata Populer",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    TextButton(onClick = onSearchClick) {
+                        Text("Lihat Semua", color = Primary)
+                    }
+                }
+            }
+
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(dummyWisataList.take(5)) { wisata ->
+                        WisataCard(
+                            wisata = wisata,
+                            onClick = { onWisataClick(wisata.id) }
+                        )
+                    }
+                }
+            }
+
+            // Wisata Terdekat
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 24.dp, bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Semua Wisata",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+            }
+
+            items(dummyWisataList) { wisata ->
+                WisataListCard(
+                    wisata = wisata,
+                    onClick = { onWisataClick(wisata.id) },
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryChip(label: String) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Primary,
+        modifier = Modifier
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = White,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    TravelWakaTheme {
+        HomeScreen(
+            navController = rememberNavController(),
+            onWisataClick = {},
+            onSearchClick = {}
+        )
+    }
+}
