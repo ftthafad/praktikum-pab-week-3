@@ -21,6 +21,12 @@ import com.travelwaka.app.ui.screens.profile.NotifikasiScreen
 import com.travelwaka.app.ui.screens.pengelola.DaftarWisataSayaScreen
 import com.travelwaka.app.ui.screens.pengelola.FormWisataScreen
 import com.travelwaka.app.ui.screens.superadmin.DashboardApprovalScreen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.travelwaka.app.ui.theme.Primary
 
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -45,24 +51,40 @@ fun AppNavigation(
     navController: NavHostController = rememberNavController()
 ) {
     val context = LocalContext.current
-    val tokenDataStore = remember { TokenDataStore(context) }
+    val tokenDataStore = remember { TokenDataStore.getInstance(context) }
 
     val hasSeenOnboarding by tokenDataStore.hasSeenOnboarding.collectAsState(initial = false)
     val token by tokenDataStore.token.collectAsState(initial = "")
     val userRole by tokenDataStore.userRole.collectAsState(initial = "")
 
-    val startDestination = when {
-        hasSeenOnboarding != true -> Routes.ONBOARDING
-        !token.isNullOrEmpty() -> when (userRole) {
-            "super_admin" -> Routes.DASHBOARD_APPROVAL
-            else -> Routes.HOME
+    android.util.Log.d("AppNav", "token: $token, role: $userRole, onboarding: $hasSeenOnboarding")
+
+    // Hitung startDestination hanya sekali
+    var startDestination by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        tokenDataStore.token.collect { t ->
+            if (startDestination == null) {
+                val onboarding = hasSeenOnboarding
+                val role = userRole
+                startDestination = when {
+                    onboarding != true -> Routes.ONBOARDING
+                    !t.isNullOrEmpty() -> when (role) {
+                        "super_admin" -> Routes.DASHBOARD_APPROVAL
+                        else -> Routes.HOME
+                    }
+                    else -> Routes.LOGIN
+                }
+            }
+            return@collect
         }
-        else -> Routes.LOGIN
     }
+
+    if (startDestination == null) return
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination!!
     ) {
         composable(Routes.ONBOARDING) {
             OnboardingScreen(

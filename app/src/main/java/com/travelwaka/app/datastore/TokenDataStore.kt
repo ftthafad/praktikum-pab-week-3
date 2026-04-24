@@ -15,6 +15,16 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "au
 class TokenDataStore(private val context: Context) {
 
     companion object {
+        @Volatile
+        private var INSTANCE: TokenDataStore? = null
+
+        fun getInstance(context: Context): TokenDataStore {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TokenDataStore(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
         val ONBOARDING_KEY = booleanPreferencesKey("has_seen_onboarding")
         val TOKEN_KEY = stringPreferencesKey("auth_token")
         val USER_ROLE_KEY = stringPreferencesKey("user_role")
@@ -24,12 +34,14 @@ class TokenDataStore(private val context: Context) {
 
     // Simpan token & data user setelah login
     suspend fun saveAuth(token: String, role: String, name: String, email: String) {
+        android.util.Log.d("DataStore", "Menyimpan: token=$token, role=$role")
         context.dataStore.edit { prefs ->
             prefs[TOKEN_KEY] = token
             prefs[USER_ROLE_KEY] = role
             prefs[USER_NAME_KEY] = name
             prefs[USER_EMAIL_KEY] = email
         }
+        android.util.Log.d("DataStore", "Selesai menyimpan")
     }
     // Ambil status onboarding
     val hasSeenOnboarding: Flow<Boolean?> = context.dataStore.data.map { prefs ->
@@ -44,9 +56,10 @@ class TokenDataStore(private val context: Context) {
     }
     // Ambil token
     val token: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[TOKEN_KEY]
+        val t = prefs[TOKEN_KEY]
+        android.util.Log.d("DataStore", "token dibaca: $t")
+        t
     }
-
 
     // Ambil role
     val userRole: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -65,8 +78,13 @@ class TokenDataStore(private val context: Context) {
 
     // Hapus semua data saat logout
     suspend fun clearAuth() {
+        android.util.Log.d("DataStore", "clearAuth dipanggil!")
+        android.util.Log.d("DataStore", Thread.currentThread().stackTrace.joinToString("\n"))
         context.dataStore.edit { prefs ->
-            prefs.clear()
+            prefs.remove(TOKEN_KEY)
+            prefs.remove(USER_ROLE_KEY)
+            prefs.remove(USER_NAME_KEY)
+            prefs.remove(USER_EMAIL_KEY)
         }
     }
 }

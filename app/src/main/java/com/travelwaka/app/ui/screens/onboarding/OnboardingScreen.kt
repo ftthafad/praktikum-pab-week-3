@@ -54,13 +54,14 @@ val onboardingPages = listOf(
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
     val context = LocalContext.current
-    val tokenDataStore = remember { TokenDataStore(context) }
+    val tokenDataStore = remember { TokenDataStore.getInstance(context) }
     val pagerState = rememberPagerState(pageCount = { onboardingPages.size })
     val scope = rememberCoroutineScope()
 
     // Fungsi selesai onboarding
     val finishOnboarding = {
         scope.launch {
+            android.util.Log.d("Onboarding", "setOnboardingDone dipanggil")
             tokenDataStore.setOnboardingDone()
             onFinish()
         }

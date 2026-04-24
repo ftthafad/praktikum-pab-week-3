@@ -10,11 +10,13 @@ import com.travelwaka.app.network.model.RegisterRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+
 
 class AuthViewModel(private val context: Context) : ViewModel() {
 
     private val apiService = ApiClient.apiService
-    private val tokenDataStore = TokenDataStore(context)
+    private val tokenDataStore = TokenDataStore.getInstance(context)
 
     // State untuk loading
     private val _isLoading = MutableStateFlow(false)
@@ -42,18 +44,21 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                 val response = apiService.login(LoginRequest(email, password))
                 if (response.status) {
                     response.data?.let { data ->
+                        android.util.Log.d("AuthVM", "Menyimpan token: ${data.token}")
                         tokenDataStore.saveAuth(
                             token = data.token,
                             role = data.user.role,
                             name = data.user.name,
                             email = data.user.email
                         )
+                        android.util.Log.d("AuthVM", "Token tersimpan")
                     }
                     _isSuccess.value = true
                 } else {
                     _errorMessage.value = response.message
                 }
             } catch (e: Exception) {
+                android.util.Log.d("AuthVM", "Error: ${e.message}")
                 _errorMessage.value = "Gagal terhubung ke server"
             } finally {
                 _isLoading.value = false
@@ -96,20 +101,17 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                tokenDataStore.token.collect { token ->
-                    if (token != null) {
-                        apiService.logout("Bearer $token")
-                    }
-                    tokenDataStore.clearAuth()
-                    _isSuccess.value = false
-                    onSuccess()
-                    return@collect
+                val token = tokenDataStore.token.first()
+                if (!token.isNullOrEmpty()) {
+                    apiService.logout("Bearer $token")
                 }
             } catch (e: Exception) {
-                tokenDataStore.clearAuth()
-                onSuccess()
+                // ignore error logout dari server
             } finally {
+                tokenDataStore.clearAuth()
+                _isSuccess.value = false
                 _isLoading.value = false
+                onSuccess()
             }
         }
     }

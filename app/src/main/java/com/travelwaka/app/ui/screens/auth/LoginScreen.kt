@@ -46,8 +46,8 @@ fun LoginScreen(
     val userRole by viewModel.userRole.collectAsState(initial = null)
 
     // Navigasi otomatis saat login berhasil
-    LaunchedEffect(isSuccess) {
-        if (isSuccess && userRole != null) {
+    LaunchedEffect(isSuccess, userRole) {
+        if (isSuccess && !userRole.isNullOrEmpty()) {
             onLoginSuccess(userRole!!)
         }
     }
