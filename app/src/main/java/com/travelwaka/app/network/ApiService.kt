@@ -12,7 +12,8 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
-
+import com.travelwaka.app.network.model.BookmarkStatusResponse
+import com.travelwaka.app.network.model.BookmarkListResponse
 interface ApiService {
 
     // ✅ Auth
@@ -53,4 +54,24 @@ interface ApiService {
     // ✅ Categories
     @GET("categories")
     suspend fun getCategories(): CategoryListResponse
+
+    // Ambil semua bookmark user
+    @GET("bookmarks")
+    suspend fun getBookmarks(
+        @Header("Authorization") token: String
+    ): BookmarkListResponse
+
+    // Toggle bookmark (add/remove)
+    @POST("bookmarks/{wisataId}")
+    suspend fun toggleBookmark(
+        @Header("Authorization") token: String,
+        @Path("wisataId") wisataId: Int
+    ): BookmarkStatusResponse
+
+    // Cek status bookmark wisata tertentu
+    @GET("bookmarks/{wisataId}")
+    suspend fun checkBookmark(
+        @Header("Authorization") token: String,
+        @Path("wisataId") wisataId: Int
+    ): BookmarkStatusResponse
 }

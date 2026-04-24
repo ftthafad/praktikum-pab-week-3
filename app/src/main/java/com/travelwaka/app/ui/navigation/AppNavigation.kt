@@ -21,11 +21,6 @@ import com.travelwaka.app.ui.screens.profile.NotifikasiScreen
 import com.travelwaka.app.ui.screens.pengelola.DaftarWisataSayaScreen
 import com.travelwaka.app.ui.screens.pengelola.FormWisataScreen
 import com.travelwaka.app.ui.screens.superadmin.DashboardApprovalScreen
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import com.travelwaka.app.ui.theme.Primary
 
 object Routes {
@@ -54,12 +49,11 @@ fun AppNavigation(
     val tokenDataStore = remember { TokenDataStore.getInstance(context) }
 
     val hasSeenOnboarding by tokenDataStore.hasSeenOnboarding.collectAsState(initial = false)
-    val token by tokenDataStore.token.collectAsState(initial = "")
+    val token by tokenDataStore.token.collectAsState(initial = null)
     val userRole by tokenDataStore.userRole.collectAsState(initial = "")
 
     android.util.Log.d("AppNav", "token: $token, role: $userRole, onboarding: $hasSeenOnboarding")
 
-    // Hitung startDestination hanya sekali
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -145,7 +139,8 @@ fun AppNavigation(
                 wisataId = wisataId,
                 navController = navController,
                 onBack = { navController.popBackStack() },
-                onWriteReview = { navController.navigate("review/$wisataId") }
+                onWriteReview = { navController.navigate("review/$wisataId") },
+                token = token?.ifEmpty { null }
             )
         }
         composable("review/{wisataId}") { backStackEntry ->
@@ -159,7 +154,8 @@ fun AppNavigation(
         composable(Routes.BOOKMARK) {
             BookmarkScreen(
                 navController = navController,
-                onWisataClick = { id -> navController.navigate("detail_wisata/$id") }
+                onWisataClick = { id -> navController.navigate("detail_wisata/$id") },
+                token = token?.ifEmpty { null }
             )
         }
         composable(Routes.PROFILE) {

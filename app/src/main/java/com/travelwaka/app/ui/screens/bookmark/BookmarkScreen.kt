@@ -3,6 +3,8 @@ package com.travelwaka.app.ui.screens.bookmark
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,15 +16,23 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
+import com.travelwaka.app.viewmodel.WisataViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarkScreen(
     navController: NavController,
-    onWisataClick: (String) -> Unit
+    onWisataClick: (String) -> Unit,
+    token: String? = null
 ) {
-    // Sementara kosong, akan disambungkan ke API setelah tabel bookmarks dibuat
-    val bookmarkedList = emptyList<Any>()
+    val viewModel = remember { WisataViewModel() }
+    val bookmarks by viewModel.bookmarks.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(token) {
+        android.util.Log.d("BookmarkScreen", "token: $token")
+        token?.let { viewModel.fetchBookmarks(it) }
+    }
 
     Scaffold(
         topBar = {
@@ -46,24 +56,76 @@ fun BookmarkScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🔖", style = MaterialTheme.typography.displayLarge)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Belum ada wisata tersimpan",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Simpan wisata favoritmu agar mudah ditemukan",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Primary
+                    )
+                }
+
+                token == null -> {
+                    // User belum login
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🔒", style = MaterialTheme.typography.displayLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Login untuk melihat bookmark",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Kamu perlu login terlebih dahulu",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                bookmarks.isEmpty() -> {
+                    // Sudah login tapi belum ada bookmark
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🔖", style = MaterialTheme.typography.displayLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Belum ada wisata tersimpan",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Simpan wisata favoritmu agar mudah ditemukan",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(bookmarks) { bookmarkItem ->
+                            WisataCard(
+                                wisata = bookmarkItem.wisata,
+                                onClick = { onWisataClick(bookmarkItem.wisata.id.toString()) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
