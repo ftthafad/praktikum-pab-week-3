@@ -2,10 +2,9 @@ package com.travelwaka.app.ui.navigation
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import com.travelwaka.app.datastore.TokenDataStore
 import com.travelwaka.app.ui.screens.onboarding.OnboardingScreen
 import com.travelwaka.app.ui.screens.auth.LoginScreen
@@ -21,30 +20,56 @@ import com.travelwaka.app.ui.screens.profile.NotifikasiScreen
 import com.travelwaka.app.ui.screens.pengelola.DaftarWisataSayaScreen
 import com.travelwaka.app.ui.screens.pengelola.FormWisataScreen
 import com.travelwaka.app.ui.screens.superadmin.DashboardApprovalScreen
-import com.travelwaka.app.ui.theme.Primary
+import kotlinx.serialization.Serializable
 
-object Routes {
-    const val ONBOARDING = "onboarding"
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val HOME = "home"
-    const val EXPLORE = "explore"
-    const val DETAIL_WISATA = "detail_wisata/{wisataId}"
-    const val REVIEW = "review/{wisataId}"
-    const val BOOKMARK = "bookmark"
-    const val PROFILE = "profile"
-    const val FORM_PENGAJUAN = "form_pengajuan"
-    const val NOTIFIKASI = "notifikasi"
-    const val DAFTAR_WISATA_SAYA = "daftar_wisata_saya"
-    const val FORM_WISATA = "form_wisata?wisataId={wisataId}"
-    const val DASHBOARD_APPROVAL = "dashboard_approval"
-    const val SPLASH = "splash"
-}
+// --- Navigation Keys ---
+
+@Serializable
+data object Onboarding : NavKey
+
+@Serializable
+data object Login : NavKey
+
+@Serializable
+data object Register : NavKey
+
+@Serializable
+data object Home : NavKey
+
+@Serializable
+data object Explore : NavKey
+
+@Serializable
+data class DetailWisata(val wisataId: String) : NavKey
+
+@Serializable
+data class Review(val wisataId: String) : NavKey
+
+@Serializable
+data object Bookmark : NavKey
+
+@Serializable
+data object Profile : NavKey
+
+@Serializable
+data object FormPengajuan : NavKey
+
+@Serializable
+data object Notifikasi : NavKey
+
+@Serializable
+data object DaftarWisataSaya : NavKey
+
+@Serializable
+data class FormWisata(val wisataId: String = "") : NavKey
+
+@Serializable
+data object DashboardApproval : NavKey
+
+// --- AppNavigation ---
 
 @Composable
-fun AppNavigation(
-    navController: NavHostController = rememberNavController()
-) {
+fun AppNavigation() {
     val context = LocalContext.current
     val tokenDataStore = remember { TokenDataStore.getInstance(context) }
 
@@ -54,7 +79,7 @@ fun AppNavigation(
 
     android.util.Log.d("AppNav", "token: $token, role: $userRole, onboarding: $hasSeenOnboarding")
 
-    var startDestination by remember { mutableStateOf<String?>(null) }
+    var startDestination by remember { mutableStateOf<NavKey?>(null) }
 
     LaunchedEffect(Unit) {
         tokenDataStore.token.collect { t ->
@@ -62,12 +87,12 @@ fun AppNavigation(
                 val onboarding = hasSeenOnboarding
                 val role = userRole
                 startDestination = when {
-                    onboarding != true -> Routes.ONBOARDING
+                    onboarding != true -> Onboarding
                     !t.isNullOrEmpty() -> when (role) {
-                        "super_admin" -> Routes.DASHBOARD_APPROVAL
-                        else -> Routes.HOME
+                        "super_admin" -> DashboardApproval
+                        else -> Home
                     }
-                    else -> Routes.LOGIN
+                    else -> Login
                 }
             }
             return@collect
@@ -76,132 +101,163 @@ fun AppNavigation(
 
     if (startDestination == null) return
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination!!
-    ) {
-        composable(Routes.ONBOARDING) {
+    // Back stack as a SnapshotStateList
+    val backStack = remember { mutableStateListOf<NavKey>(startDestination!!) }
+
+    // Helper to get the current route (top of the stack)
+    val currentRoute = backStack.lastOrNull()
+
+    // Navigation helper functions
+    fun navigateTo(route: NavKey) {
+        backStack.add(route)
+    }
+
+    fun navigateAndClearTo(route: NavKey) {
+        backStack.clear()
+        backStack.add(route)
+    }
+
+    fun goBack() {
+        if (backStack.size > 1) {
+            backStack.removeLastOrNull()
+        }
+    }
+
+    // Switch bottom nav tabs: clear stack and go to the tab
+    fun navigateToTab(route: NavKey) {
+        if (currentRoute != route) {
+            backStack.clear()
+            backStack.add(route)
+        }
+    }
+
+    val entryProvider = entryProvider<NavKey> {
+        entry<Onboarding> {
             OnboardingScreen(
                 onFinish = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
-                    }
+                    navigateAndClearTo(Login)
                 }
             )
         }
-        composable(Routes.LOGIN) {
+
+        entry<Login> {
             LoginScreen(
                 onLoginSuccess = { role ->
                     when (role) {
-                        "super_admin" -> navController.navigate(Routes.DASHBOARD_APPROVAL) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
-                        }
-                        else -> navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
-                        }
+                        "super_admin" -> navigateAndClearTo(DashboardApproval)
+                        else -> navigateAndClearTo(Home)
                     }
                 },
-                onNavigateToRegister = { navController.navigate(Routes.REGISTER) },
+                onNavigateToRegister = { navigateTo(Register) },
                 onSkip = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
+                    navigateAndClearTo(Home)
                 }
             )
         }
-        composable(Routes.REGISTER) {
+
+        entry<Register> {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
+                    navigateAndClearTo(Home)
                 },
-                onNavigateToLogin = { navController.popBackStack() }
+                onNavigateToLogin = { goBack() }
             )
         }
-        composable(Routes.HOME) {
+
+        entry<Home> {
             HomeScreen(
-                navController = navController,
-                onWisataClick = { id -> navController.navigate("detail_wisata/$id") },
-                onSearchClick = { navController.navigate(Routes.EXPLORE) }
+                currentRoute = currentRoute,
+                onNavigate = { navigateToTab(it) },
+                onWisataClick = { id -> navigateTo(DetailWisata(wisataId = id)) },
+                onSearchClick = { navigateTo(Explore) }
             )
         }
-        composable(Routes.EXPLORE) {
+
+        entry<Explore> {
             ExploreScreen(
-                navController = navController,
-                onWisataClick = { id -> navController.navigate("detail_wisata/$id") },
-                onBack = { navController.popBackStack() }
+                currentRoute = currentRoute,
+                onNavigate = { navigateToTab(it) },
+                onWisataClick = { id -> navigateTo(DetailWisata(wisataId = id)) },
+                onBack = { goBack() }
             )
         }
-        composable("detail_wisata/{wisataId}") { backStackEntry ->
-            val wisataId = backStackEntry.arguments?.getString("wisataId") ?: ""
+
+        entry<DetailWisata> { key ->
             DetailWisataScreen(
-                wisataId = wisataId,
-                navController = navController,
-                onBack = { navController.popBackStack() },
-                onWriteReview = { navController.navigate("review/$wisataId") },
+                wisataId = key.wisataId,
+                onBack = { goBack() },
+                onWriteReview = { navigateTo(Review(wisataId = key.wisataId)) },
                 token = token?.ifEmpty { null }
             )
         }
-        composable("review/{wisataId}") { backStackEntry ->
-            val wisataId = backStackEntry.arguments?.getString("wisataId") ?: ""
+
+        entry<Review> { key ->
             ReviewScreen(
-                wisataId = wisataId,
-                onBack = { navController.popBackStack() },
-                onSubmit = { navController.popBackStack() }
+                wisataId = key.wisataId,
+                onBack = { goBack() },
+                onSubmit = { goBack() }
             )
         }
-        composable(Routes.BOOKMARK) {
+
+        entry<Bookmark> {
             BookmarkScreen(
-                navController = navController,
-                onWisataClick = { id -> navController.navigate("detail_wisata/$id") },
+                currentRoute = currentRoute,
+                onNavigate = { navigateToTab(it) },
+                onWisataClick = { id -> navigateTo(DetailWisata(wisataId = id)) },
                 token = token?.ifEmpty { null }
             )
         }
-        composable(Routes.PROFILE) {
+
+        entry<Profile> {
             ProfileScreen(
-                navController = navController,
-                onAjukanPengelola = { navController.navigate(Routes.FORM_PENGAJUAN) },
-                onKelolWisata = { navController.navigate(Routes.DAFTAR_WISATA_SAYA) },
-                onNotifikasi = { navController.navigate(Routes.NOTIFIKASI) },
+                currentRoute = currentRoute,
+                onNavigate = { navigateToTab(it) },
+                onAjukanPengelola = { navigateTo(FormPengajuan) },
+                onKelolWisata = { navigateTo(DaftarWisataSaya) },
+                onNotifikasi = { navigateTo(Notifikasi) },
                 onLogout = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navigateAndClearTo(Login)
                 }
             )
         }
-        composable(Routes.FORM_PENGAJUAN) {
+
+        entry<FormPengajuan> {
             FormPengajuanScreen(
-                onBack = { navController.popBackStack() },
-                onSubmit = { navController.popBackStack() }
+                onBack = { goBack() },
+                onSubmit = { goBack() }
             )
         }
-        composable(Routes.NOTIFIKASI) {
+
+        entry<Notifikasi> {
             NotifikasiScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { goBack() }
             )
         }
-        composable(Routes.DAFTAR_WISATA_SAYA) {
+
+        entry<DaftarWisataSaya> {
             DaftarWisataSayaScreen(
-                navController = navController,
-                onBack = { navController.popBackStack() },
-                onTambahWisata = { navController.navigate("form_wisata?wisataId=") },
-                onEditWisata = { id -> navController.navigate("form_wisata?wisataId=$id") }
+                onBack = { goBack() },
+                onTambahWisata = { navigateTo(FormWisata()) },
+                onEditWisata = { id -> navigateTo(FormWisata(wisataId = id)) }
             )
         }
-        composable("form_wisata?wisataId={wisataId}") { backStackEntry ->
-            val wisataId = backStackEntry.arguments?.getString("wisataId") ?: ""
+
+        entry<FormWisata> { key ->
             FormWisataScreen(
-                wisataId = wisataId,
-                onBack = { navController.popBackStack() },
-                onSave = { navController.popBackStack() }
+                wisataId = key.wisataId,
+                onBack = { goBack() },
+                onSave = { goBack() }
             )
         }
-        composable(Routes.DASHBOARD_APPROVAL) {
-            DashboardApprovalScreen(
-                navController = navController
-            )
+
+        entry<DashboardApproval> {
+            DashboardApprovalScreen()
         }
     }
+
+    NavDisplay(
+        backStack = backStack,
+        entryProvider = entryProvider,
+        onBack = { goBack() }
+    )
 }

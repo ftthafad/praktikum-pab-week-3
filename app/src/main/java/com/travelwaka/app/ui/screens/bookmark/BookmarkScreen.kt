@@ -12,8 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
 import com.travelwaka.app.viewmodel.WisataViewModel
@@ -21,7 +20,8 @@ import com.travelwaka.app.viewmodel.WisataViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarkScreen(
-    navController: NavController,
+    currentRoute: NavKey?,
+    onNavigate: (NavKey) -> Unit,
     onWisataClick: (String) -> Unit,
     token: String? = null
 ) {
@@ -50,7 +50,7 @@ fun BookmarkScreen(
                 )
             )
         },
-        bottomBar = { BottomNavBar(navController) },
+        bottomBar = { BottomNavBar(currentRoute, onNavigate) },
         containerColor = Background
     ) { paddingValues ->
         Box(
@@ -136,7 +136,8 @@ fun BookmarkScreen(
 fun BookmarkScreenPreview() {
     TravelWakaTheme {
         BookmarkScreen(
-            navController = rememberNavController(),
+            currentRoute = null,
+            onNavigate = {},
             onWisataClick = {}
         )
     }

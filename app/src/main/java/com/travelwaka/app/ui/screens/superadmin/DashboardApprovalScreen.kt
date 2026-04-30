@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.travelwaka.app.ui.theme.*
 
 data class PengajuanItem(
@@ -71,9 +69,7 @@ val dummyPengajuan = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardApprovalScreen(
-    navController: NavController
-) {
+fun DashboardApprovalScreen() {
     var pengajuanList by remember { mutableStateOf(dummyPengajuan.toMutableList()) }
     var selectedTab by remember { mutableStateOf(0) }
     var detailItem by remember { mutableStateOf<PengajuanItem?>(null) }
@@ -449,6 +445,6 @@ fun DetailRow(label: String, value: String) {
 @Composable
 fun DashboardApprovalScreenPreview() {
     TravelWakaTheme {
-        DashboardApprovalScreen(navController = rememberNavController())
+        DashboardApprovalScreen()
     }
 }

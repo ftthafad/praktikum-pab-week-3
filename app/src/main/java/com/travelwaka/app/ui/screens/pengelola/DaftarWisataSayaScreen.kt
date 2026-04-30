@@ -16,8 +16,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
@@ -25,7 +23,6 @@ import com.travelwaka.app.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DaftarWisataSayaScreen(
-    navController: NavController,
     onBack: () -> Unit,
     onTambahWisata: () -> Unit,
     onEditWisata: (String) -> Unit
@@ -254,7 +251,6 @@ fun PengelolaWisataCard(
 fun DaftarWisataSayaScreenPreview() {
     TravelWakaTheme {
         DaftarWisataSayaScreen(
-            navController = rememberNavController(),
             onBack = {},
             onTambahWisata = {},
             onEditWisata = {}

@@ -17,8 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
 import com.travelwaka.app.ui.components.BottomNavBar
 import com.travelwaka.app.ui.theme.*
 import com.travelwaka.app.viewmodel.AuthViewModel
@@ -26,7 +25,8 @@ import com.travelwaka.app.viewmodel.AuthViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navController: NavController,
+    currentRoute: NavKey?,
+    onNavigate: (NavKey) -> Unit,
     onAjukanPengelola: () -> Unit,
     onKelolWisata: () -> Unit,
     onNotifikasi: () -> Unit,
@@ -41,7 +41,7 @@ fun ProfileScreen(
     val userRole by viewModel.userRole.collectAsState(initial = "user")
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController) },
+        bottomBar = { BottomNavBar(currentRoute, onNavigate) },
         containerColor = Background
     ) { paddingValues ->
         Column(
@@ -243,7 +243,8 @@ fun ProfileMenuItem(
 fun ProfileScreenPreview() {
     TravelWakaTheme {
         ProfileScreen(
-            navController = rememberNavController(),
+            currentRoute = null,
+            onNavigate = {},
             onAjukanPengelola = {},
             onKelolWisata = {},
             onNotifikasi = {},

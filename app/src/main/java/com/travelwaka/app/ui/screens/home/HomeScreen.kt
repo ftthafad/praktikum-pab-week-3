@@ -23,8 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.travelwaka.app.network.model.Wisata
 import com.travelwaka.app.ui.components.*
@@ -40,7 +39,8 @@ val bannerImages = listOf(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
+    currentRoute: NavKey?,
+    onNavigate: (NavKey) -> Unit,
     onWisataClick: (String) -> Unit,
     onSearchClick: () -> Unit
 ) {
@@ -69,7 +69,7 @@ fun HomeScreen(
     }
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController) },
+        bottomBar = { BottomNavBar(currentRoute, onNavigate) },
         containerColor = Background
     ) { paddingValues ->
         LazyColumn(
@@ -306,7 +306,8 @@ fun CategoryChip(
 fun HomeScreenPreview() {
     TravelWakaTheme {
         HomeScreen(
-            navController = rememberNavController(),
+            currentRoute = null,
+            onNavigate = {},
             onWisataClick = {},
             onSearchClick = {}
         )

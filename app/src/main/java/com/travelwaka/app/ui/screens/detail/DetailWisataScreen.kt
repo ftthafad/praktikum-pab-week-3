@@ -22,8 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.travelwaka.app.ui.components.*
 import com.travelwaka.app.ui.theme.*
@@ -46,7 +44,6 @@ val dummyReviews = listOf(
 @Composable
 fun DetailWisataScreen(
     wisataId: String,
-    navController: NavController,
     onBack: () -> Unit,
     onWriteReview: () -> Unit,
     token: String? = null
@@ -368,7 +365,6 @@ fun DetailWisataScreenPreview() {
     TravelWakaTheme {
         DetailWisataScreen(
             wisataId = "1",
-            navController = rememberNavController(),
             onBack = {},
             onWriteReview = {}
         )

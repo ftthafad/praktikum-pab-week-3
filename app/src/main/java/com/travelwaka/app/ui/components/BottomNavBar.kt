@@ -7,29 +7,30 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import com.travelwaka.app.ui.navigation.Routes
+import androidx.navigation3.runtime.NavKey
+import com.travelwaka.app.ui.navigation.Home
+import com.travelwaka.app.ui.navigation.Explore
+import com.travelwaka.app.ui.navigation.Bookmark
+import com.travelwaka.app.ui.navigation.Profile
 
 data class BottomNavItem(
     val label: String,
-    val route: String,
+    val route: NavKey,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem("Home", Routes.HOME, Icons.Filled.Home),
-    BottomNavItem("Explore", Routes.EXPLORE, Icons.Filled.Explore),
-    BottomNavItem("Bookmark", Routes.BOOKMARK, Icons.Filled.Bookmark),
-    BottomNavItem("Profil", Routes.PROFILE, Icons.Filled.Person)
+    BottomNavItem("Home", Home, Icons.Filled.Home),
+    BottomNavItem("Explore", Explore, Icons.Filled.Explore),
+    BottomNavItem("Bookmark", Bookmark, Icons.Filled.Bookmark),
+    BottomNavItem("Profil", Profile, Icons.Filled.Person)
 )
 
 @Composable
-fun BottomNavBar(navController: NavController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
+fun BottomNavBar(
+    currentRoute: NavKey?,
+    onNavigate: (NavKey) -> Unit
+) {
     NavigationBar(
         containerColor = androidx.compose.ui.graphics.Color.White,
         tonalElevation = 8.dp
@@ -39,11 +40,7 @@ fun BottomNavBar(navController: NavController) {
                 selected = currentRoute == item.route,
                 onClick = {
                     if (currentRoute != item.route) {
-                        navController.navigate(item.route) {
-                            popUpTo(Routes.HOME) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        onNavigate(item.route)
                     }
                 },
                 icon = {
