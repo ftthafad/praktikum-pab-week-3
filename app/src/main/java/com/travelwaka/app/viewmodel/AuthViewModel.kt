@@ -37,6 +37,24 @@ class AuthViewModel(private val context: Context) : ViewModel() {
 
     // Login
     fun login(email: String, password: String) {
+        // Validasi lokal dulu sebelum hit API
+        if (email.isBlank()) {
+            _errorMessage.value = "Email tidak boleh kosong"
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _errorMessage.value = "Format email tidak valid"
+            return
+        }
+        if (password.isBlank()) {
+            _errorMessage.value = "Password tidak boleh kosong"
+            return
+        }
+        if (password.length < 8) {
+            _errorMessage.value = "Email atau password tidak valid"
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -44,30 +62,43 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                 val response = apiService.login(LoginRequest(email, password))
                 if (response.status) {
                     response.data?.let { data ->
-                        android.util.Log.d("AuthVM", "Menyimpan token: ${data.token}")
                         tokenDataStore.saveAuth(
                             token = data.token,
                             role = data.user.role,
                             name = data.user.name,
                             email = data.user.email
                         )
-                        android.util.Log.d("AuthVM", "Token tersimpan")
                     }
                     _isSuccess.value = true
                 } else {
-                    _errorMessage.value = response.message
+                    // ✅ Pakai pesan umum, abaikan response.message dari server
+                    _errorMessage.value = "Email atau password tidak valid"
                 }
             } catch (e: Exception) {
-                android.util.Log.d("AuthVM", "Error: ${e.message}")
                 _errorMessage.value = "Gagal terhubung ke server"
             } finally {
                 _isLoading.value = false
             }
         }
     }
-
     // Register
     fun register(name: String, email: String, password: String, passwordConfirmation: String) {
+        if (name.isBlank()) {
+            _errorMessage.value = "Nama tidak boleh kosong"
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _errorMessage.value = "Format email tidak valid"
+            return
+        }
+        if (password.length < 8) {
+            _errorMessage.value = "Password harus minimal 8 karakter"
+            return
+        }
+        if (password != passwordConfirmation) {
+            _errorMessage.value = "Konfirmasi password tidak cocok"
+            return
+        }
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
