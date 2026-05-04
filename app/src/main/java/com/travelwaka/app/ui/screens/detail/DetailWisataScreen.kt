@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -40,12 +41,13 @@ val dummyReviews = listOf(
     ReviewItem("Ahmad Fauzi", 5, "Wajib dikunjungi kalau ke Jawa Tengah!", "28 Mar 2025")
 )
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DetailWisataScreen(
     wisataId: String,
     onBack: () -> Unit,
     onWriteReview: () -> Unit,
+    onNavigateToLogin: () -> Unit = {},
     token: String? = null
 ) {
     val context = LocalContext.current
@@ -55,6 +57,10 @@ fun DetailWisataScreen(
     val isBookmarked by viewModel.isBookmarked.collectAsState()
     val bookmarkMessage by viewModel.bookmarkMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // State untuk Bottom Sheet
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showLoginSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(wisataId) {
         viewModel.getWisataDetail(wisataId.toIntOrNull() ?: 0)
@@ -70,6 +76,99 @@ fun DetailWisataScreen(
 
     val photos = wisata?.photos ?: emptyList()
     val pagerState = rememberPagerState(pageCount = { if (photos.isEmpty()) 1 else photos.size })
+
+    // Bottom Sheet Login
+    if (showLoginSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showLoginSheet = false },
+            sheetState = sheetState,
+            containerColor = White,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Handle bar
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(DividerColor)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(Primary.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.BookmarkBorder,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "Login untuk Menyimpan",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    "Kamu perlu login terlebih dahulu untuk menyimpan wisata favoritmu",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        showLoginSheet = false
+                        onNavigateToLogin()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                ) {
+                    Icon(Icons.Filled.Login, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Login Sekarang",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                TextButton(
+                    onClick = { showLoginSheet = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Nanti Saja", color = TextSecondary)
+                }
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -160,9 +259,12 @@ fun DetailWisataScreen(
                                         }
                                     }
                                     Row {
+                                        // Tombol Bookmark — cek token dulu
                                         IconButton(onClick = {
-                                            token?.let {
-                                                viewModel.toggleBookmark(it, wisataId.toIntOrNull() ?: 0)
+                                            if (token == null) {
+                                                showLoginSheet = true
+                                            } else {
+                                                viewModel.toggleBookmark(token, wisataId.toIntOrNull() ?: 0)
                                             }
                                         }) {
                                             Icon(
@@ -256,17 +358,9 @@ fun DetailWisataScreen(
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
                                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Primary)
                                     ) {
-                                        Icon(
-                                            Icons.Filled.Directions,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
+                                        Icon(Icons.Filled.Directions, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            "Get Direction",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                        Text("Get Direction", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
 
@@ -292,11 +386,12 @@ fun DetailWisataScreen(
                         ReviewCard(review = review, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
                     }
                 }
+
+
             }
         }
     }
 }
-
 @Composable
 fun InfoChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -356,17 +451,5 @@ fun ReviewCard(review: ReviewItem, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(review.comment, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DetailWisataScreenPreview() {
-    TravelWakaTheme {
-        DetailWisataScreen(
-            wisataId = "1",
-            onBack = {},
-            onWriteReview = {}
-        )
     }
 }

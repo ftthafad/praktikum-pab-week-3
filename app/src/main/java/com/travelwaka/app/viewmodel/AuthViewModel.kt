@@ -71,7 +71,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                     }
                     _isSuccess.value = true
                 } else {
-                    // ✅ Pakai pesan umum, abaikan response.message dari server
+                    // Pakai pesan umum, abaikan response.message dari server
                     _errorMessage.value = "Email atau password tidak valid"
                 }
             } catch (e: Exception) {

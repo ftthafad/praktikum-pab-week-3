@@ -187,6 +187,7 @@ fun AppNavigation() {
                 wisataId = key.wisataId,
                 onBack = { goBack() },
                 onWriteReview = { navigateTo(Review(wisataId = key.wisataId)) },
+                onNavigateToLogin = { navigateAndClearTo(Login) },
                 token = token?.ifEmpty { null }
             )
         }

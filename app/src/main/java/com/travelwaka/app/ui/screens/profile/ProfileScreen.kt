@@ -39,6 +39,52 @@ fun ProfileScreen(
     val userName by viewModel.userName.collectAsState(initial = "")
     val userEmail by viewModel.userEmail.collectAsState(initial = "")
     val userRole by viewModel.userRole.collectAsState(initial = "user")
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            icon = {
+                Icon(
+                    Icons.Filled.Logout,
+                    contentDescription = null,
+                    tint = ErrorColor
+                )
+            },
+            title = {
+                Text(
+                    "Keluar dari Akun?",
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    "Kamu akan keluar dari akun ini. Yakin ingin melanjutkan?",
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.logout { onLogout() }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorColor),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Keluar", color = White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Batal", color = TextSecondary)
+                }
+            },
+            containerColor = White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 
     Scaffold(
         bottomBar = { BottomNavBar(currentRoute, onNavigate) },
@@ -178,9 +224,7 @@ fun ProfileScreen(
                         icon = Icons.Filled.Logout,
                         title = "Keluar",
                         subtitle = "Keluar dari akun",
-                        onClick = {
-                            viewModel.logout { onLogout() }
-                        },
+                        onClick = { showLogoutDialog = true },
                         tintColor = ErrorColor
                     )
                 }
